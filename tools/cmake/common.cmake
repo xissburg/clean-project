@@ -22,9 +22,6 @@ if(WIN32)
 	set(OGRE_SAMPLES_INCLUDEPATH "$ENV{OGRE_HOME}/Samples/include")
 endif(WIN32)
 
-set(OGRE_SDK "/Users/xissburg/Documents/Projects/ogre/build/sdk")
-set(CMAKE_MODULE_PATH "${OGRE_SDK}/CMake;${CMAKE_MODULE_PATH}")
-
 if (CMAKE_BUILD_TYPE STREQUAL "")
   # CMake defaults to leaving CMAKE_BUILD_TYPE empty. This screws up
   # differentiation between debug and release builds.

@@ -54,9 +54,7 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeSt
 
     try {
         self.tutorialApplication->go();
-        Root& root = Root::getSingleton();
-        RenderSystem *renderSystem = root.getRenderSystem();
-        renderSystem->_initRenderTargets();
+        Ogre::Root::getSingleton().getRenderSystem()->_initRenderTargets();
 
         // Clear event times
         Ogre::Root::getSingleton().clearEventTimes();
@@ -67,9 +65,7 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeSt
 
     // Setup close button
     OSXCocoaWindow *cocoaWindow = static_cast<OSXCocoaWindow *>(self.tutorialApplication->getWindow());
-    //NSAssert(cocoaWindow, @"bleh");
     NSWindow *window = cocoaWindow->ogreWindow();
-    //NSAssert(window, @"Breh");
 
     window.styleMask |= NSClosableWindowMask;
 
@@ -93,8 +89,7 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeSt
 
     // Activate the display link
     ret = CVDisplayLinkStart(self.displayLink);
-
-    [pool drain];
+    
     [pool release];
 }
 
