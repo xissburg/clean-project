@@ -101,7 +101,11 @@ if (APPLE)
 		set_source_files_properties(${CMAKE_SOURCE_DIR}/src/TutorialApplication.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
 		set_source_files_properties(${CMAKE_SOURCE_DIR}/src/BaseApplication.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
 
-		set (APP_CONTENTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/${APP}.app/Contents)
+		if (CMAKE_GENERATOR STREQUAL "Xcode")
+			set (APP_CONTENTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/$(CONFIGURATION)/${APP}.app/Contents)
+		else ()
+			set (APP_CONTENTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/${APP}.app/Contents)
+		endif ()
 
     set_target_properties(${APP} PROPERTIES
 		LINK_FLAGS "-framework Foundation -framework Cocoa -framework OpenGL -framework CoreGraphics -framework IOKit -framework CoreVideo")
