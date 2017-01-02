@@ -4,17 +4,42 @@ Filename:    BaseApplication.cpp
 -----------------------------------------------------------------------------
 
 This source file is part of the
-   ___                 __    __ _ _    _ 
+   ___                 __    __ _ _    _
   /___\__ _ _ __ ___  / / /\ \ (_) | _(_)
  //  // _` | '__/ _ \ \ \/  \/ / | |/ / |
 / \_// (_| | | |  __/  \  /\  /| |   <| |
 \___/ \__, |_|  \___|   \/  \/ |_|_|\_\_|
-      |___/                              
+      |___/
       Tutorial Framework
       http://www.ogre3d.org/tikiwiki/
 -----------------------------------------------------------------------------
 */
 #include "BaseApplication.h"
+
+#include <OgreTextureManager.h>
+#include <OgreMaterialManager.h>
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
+#include <OSX/macUtils.h>
+
+#import <Foundation/Foundation.h>
+
+Ogre::String AppSupportDirectory()
+{
+    NSString *appSupportDir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) lastObject];
+    appSupportDir = [appSupportDir stringByAppendingPathComponent:@"OgreApp"];
+
+    if (![[NSFileManager defaultManager] fileExistsAtPath:appSupportDir isDirectory:NULL]) {
+        NSError *error = nil;
+
+        if (![[NSFileManager defaultManager] createDirectoryAtPath:appSupportDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+            NSLog(@"Failed to create Application Support dir: %@", error.localizedDescription);
+        }
+    }
+
+    return Ogre::String([appSupportDir cStringUsingEncoding:NSASCIIStringEncoding]);
+}
+#endif
 
 //-------------------------------------------------------------------------------------
 BaseApplication::BaseApplication(void)
@@ -22,8 +47,8 @@ BaseApplication::BaseApplication(void)
     mCamera(0),
     mSceneMgr(0),
     mWindow(0),
-    mResourcesCfg(Ogre::StringUtil::BLANK),
-    mPluginsCfg(Ogre::StringUtil::BLANK),
+    mResourcesCfg(Ogre::BLANKSTRING),
+    mPluginsCfg(Ogre::BLANKSTRING),
     mTrayMgr(0),
     mCameraMan(0),
     mDetailsPanel(0),
@@ -31,7 +56,14 @@ BaseApplication::BaseApplication(void)
     mShutDown(false),
     mInputManager(0),
     mMouse(0),
-    mKeyboard(0)
+    mKeyboard(0),
+#if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
+    mResourcesPath(Ogre::macBundlePath() + "/Contents/Resources/")
+#elif defined(OGRE_IS_IOS)
+    mResourcesPath(Ogre::macBundlePath() + "/")
+#else
+    mResourcesPath("")
+#endif
 {
 }
 
@@ -119,7 +151,7 @@ void BaseApplication::createFrameListener(void)
     mTrayMgr = new OgreBites::SdkTrayManager("InterfaceName", mWindow, mMouse, this);
 #else
 	OgreBites::InputContext inputContext;
-	inputContext.mMouse = mMouse; 
+	inputContext.mMouse = mMouse;
 	inputContext.mKeyboard = mKeyboard;
     mTrayMgr = new OgreBites::SdkTrayManager("InterfaceName", mWindow, inputContext, this);
 #endif
@@ -168,7 +200,7 @@ void BaseApplication::setupResources(void)
 {
     // Load resource paths from config file
     Ogre::ConfigFile cf;
-    cf.load(mResourcesCfg);
+    cf.load(mResourcesPath + mResourcesCfg);
 
     // Go through all sections & settings in the file
     Ogre::ConfigFile::SectionIterator seci = cf.getSectionIterator();
@@ -182,7 +214,7 @@ void BaseApplication::setupResources(void)
         for (i = settings->begin(); i != settings->end(); ++i)
         {
             typeName = i->first;
-            archName = i->second;
+            archName = mResourcesPath + i->second;
             Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
                 archName, typeName, secName);
         }
@@ -212,15 +244,27 @@ void BaseApplication::go(void)
     if (!setup())
         return;
 
+#if (OGRE_PLATFORM != OGRE_PLATFORM_APPLE_IOS) && (OGRE_PLATFORM != OGRE_PLATFORM_APPLE) // use display link if Apple/iOS
     mRoot->startRendering();
 
     // clean up
     destroyScene();
+#endif
 }
+
 //-------------------------------------------------------------------------------------
 bool BaseApplication::setup(void)
 {
-    mRoot = new Ogre::Root(mPluginsCfg);
+#if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
+    // Save config file to ~/Library/Application Support/OgreApp
+    // By default Ogre will try to write this file to the same location where the executable is at,
+    // that is OgreApp.app/Contents/MacOS, and thus it will fail.
+    Ogre::String configFileName = AppSupportDirectory() + "/ogre.cfg";
+#else
+    Ogre::String configFileName = "ogre.cfg";
+#endif
+
+    mRoot = new Ogre::Root(mResourcesPath + mPluginsCfg, configFileName);
 
     setupResources();
 
@@ -381,22 +425,22 @@ bool BaseApplication::keyReleased( const OIS::KeyEvent &arg )
 
 bool BaseApplication::mouseMoved( const OIS::MouseEvent &arg )
 {
-    if (mTrayMgr->injectMouseMove(arg)) return true;
-    mCameraMan->injectMouseMove(arg);
+    if (mTrayMgr->injectPointerMove(arg)) return true;
+    mCameraMan->injectPointerMove(arg);
     return true;
 }
 
 bool BaseApplication::mousePressed( const OIS::MouseEvent &arg, OIS::MouseButtonID id )
 {
-    if (mTrayMgr->injectMouseDown(arg, id)) return true;
-    mCameraMan->injectMouseDown(arg, id);
+    if (mTrayMgr->injectPointerDown(arg, id)) return true;
+    mCameraMan->injectPointerDown(arg, id);
     return true;
 }
 
 bool BaseApplication::mouseReleased( const OIS::MouseEvent &arg, OIS::MouseButtonID id )
 {
-    if (mTrayMgr->injectMouseUp(arg, id)) return true;
-    mCameraMan->injectMouseUp(arg, id);
+    if (mTrayMgr->injectPointerUp(arg, id)) return true;
+    mCameraMan->injectPointerUp(arg, id);
     return true;
 }
 

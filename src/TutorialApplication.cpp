@@ -4,12 +4,12 @@ Filename:    TutorialApplication.cpp
 -----------------------------------------------------------------------------
 
 This source file is part of the
-   ___                 __    __ _ _    _ 
+   ___                 __    __ _ _    _
   /___\__ _ _ __ ___  / / /\ \ (_) | _(_)
  //  // _` | '__/ _ \ \ \/  \/ / | |/ / |
 / \_// (_| | | |  __/  \  /\  /| |   <| |
 \___/ \__, |_|  \___|   \/  \/ |_|_|\_\_|
-      |___/                              
+      |___/
       Tutorial Framework
       http://www.ogre3d.org/tikiwiki/
 -----------------------------------------------------------------------------
@@ -38,6 +38,10 @@ void TutorialApplication::createScene(void)
 #include "windows.h"
 #endif
 
+#if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
+#include "AppDelegate.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,19 +52,30 @@ extern "C" {
     int main(int argc, char *argv[])
 #endif
     {
-        // Create application object
         TutorialApplication app;
 
-        try {
-            app.go();
-        } catch( Ogre::Exception& e ) {
-#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
-            MessageBox( NULL, e.getFullDescription().c_str(), "An exception has occured!", MB_OK | MB_ICONERROR | MB_TASKMODAL);
-#else
-            std::cerr << "An exception has occured: " <<
-                e.getFullDescription().c_str() << std::endl;
-#endif
-        }
+        #if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
+            NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+
+            AppDelegate *appDelegate = [[AppDelegate alloc] init];
+            appDelegate.tutorialApplication = &app;
+            [[NSApplication sharedApplication] setDelegate:appDelegate];
+            [[NSApplication sharedApplication] run];
+
+            [pool release];
+
+            return 0;
+        #else
+            try {
+                app.go();
+            } catch( Ogre::Exception& e ) {
+            #if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+                MessageBox( NULL, e.getFullDescription().c_str(), "An exception has occured!", MB_OK | MB_ICONERROR | MB_TASKMODAL);
+            #else
+                std::cerr << "An exception has occured: " << e.getFullDescription().c_str() << std::endl;
+            #endif
+            }
+        #endif
 
         return 0;
     }
