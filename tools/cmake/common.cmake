@@ -92,39 +92,41 @@ set_target_properties(${APP} PROPERTIES DEBUG_POSTFIX _d)
 
 target_link_libraries(${APP} ${OGRE_LIBRARIES} ${OIS_LIBRARIES} ${OGRE_Overlay_LIBRARIES})
 
+if (CMAKE_GENERATOR STREQUAL "Xcode")
+	set(CONFIGURATION $(CONFIGURATION))
+else ()
+	set(CONFIGURATION ${CMAKE_BUILD_TYPE})
+endif ()
+
 if (APPLE)
-		include_directories(
+	include_directories(
         ${OGRE_SDK}/include/OGRE/RenderSystems/GL/
         ${OGRE_SDK}/include/OGRE/RenderSystems/GL/OSX
     )
 
-		set_source_files_properties(${CMAKE_SOURCE_DIR}/src/TutorialApplication.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
-		set_source_files_properties(${CMAKE_SOURCE_DIR}/src/BaseApplication.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
+	set_source_files_properties(
+		${CMAKE_SOURCE_DIR}/src/TutorialApplication.cpp ${CMAKE_SOURCE_DIR}/src/BaseApplication.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
 
-		if (CMAKE_GENERATOR STREQUAL "Xcode")
-			set (APP_CONTENTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/$(CONFIGURATION)/${APP}.app/Contents)
-		else ()
-			set (APP_CONTENTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/${APP}.app/Contents)
-		endif ()
+	set(APP_CONTENTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/${CONFIGURATION}/${APP}.app/Contents)
 
     set_target_properties(${APP} PROPERTIES
 		LINK_FLAGS "-framework Foundation -framework Cocoa -framework OpenGL -framework CoreGraphics -framework IOKit -framework CoreVideo")
 
-		set_property(TARGET ${APP} PROPERTY MACOSX_BUNDLE_ICON_FILE icon.icns)
-		set_property(TARGET ${APP} PROPERTY MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/resources/Info.plist)
-		set_property(TARGET ${APP} PROPERTY MACOSX_BUNDLE_GUI_IDENTIFIER "org.ogre3d.Clean")
+	set_property(TARGET ${APP} PROPERTY MACOSX_BUNDLE_ICON_FILE icon.icns)
+	set_property(TARGET ${APP} PROPERTY MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/resources/Info.plist)
+	set_property(TARGET ${APP} PROPERTY MACOSX_BUNDLE_GUI_IDENTIFIER "org.ogre3d.Clean")
     set_target_properties(${APP} PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH "NO")
 
-		add_custom_command(TARGET ${APP} POST_BUILD
-			COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/icon.icns ${APP_CONTENTS_PATH}/Resources/
-			COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/resources.cfg ${APP_CONTENTS_PATH}/Resources/
-			COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/plugins.cfg ${APP_CONTENTS_PATH}/Resources/
-			COMMAND ditto ${OGRE_SDK}/Media ${APP_CONTENTS_PATH}/Resources/Media
-		)
+	add_custom_command(TARGET ${APP} POST_BUILD
+		COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/icon.icns ${APP_CONTENTS_PATH}/Resources/
+		COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/resources.cfg ${APP_CONTENTS_PATH}/Resources/
+		COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/plugins.cfg ${APP_CONTENTS_PATH}/Resources/
+		COMMAND ditto ${CMAKE_SOURCE_DIR}/resources/media/ ${APP_CONTENTS_PATH}/Resources/Media/
+	)
 
-		set(FRAMEWORKS
-				Ogre
-				OgreOverlay
+	set(FRAMEWORKS
+		Ogre
+		OgreOverlay
         OgrePaging
         OgreProperty
         OgreRTShaderSystem
@@ -139,14 +141,13 @@ if (APPLE)
     )
 
     foreach(FWK ${FRAMEWORKS})
-			add_custom_command(TARGET ${APP} POST_BUILD
-				COMMAND ditto ${OGRE_SDK}/lib/RelWithDebInfo/${FWK}.framework ${APP_CONTENTS_PATH}/Frameworks/${FWK}.framework
-			)
+		add_custom_command(TARGET ${APP} POST_BUILD
+			COMMAND ditto ${OGRE_SDK}/lib/RelWithDebInfo/${FWK}.framework ${APP_CONTENTS_PATH}/Frameworks/${FWK}.framework
+		)
     endforeach(FWK)
 endif ()
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/bin)
-#file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/media)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/bin/${CONFIGURATION})
 
 # post-build copy for win32
 if(WIN32 AND NOT MINGW)
@@ -157,7 +158,7 @@ if(WIN32 AND NOT MINGW)
 endif(WIN32 AND NOT MINGW)
 
 if(MINGW OR UNIX)
-	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/dist/bin)
+	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/dist/bin/${CONFIGURATION})
 endif(MINGW OR UNIX)
 
 if(WIN32)
